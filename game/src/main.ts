@@ -1,19 +1,21 @@
 import Phaser from "phaser";
 import "./style.css";
-import { LifeScene } from "./game/scenes/LifeScene";
-import { BossScene } from "./game/scenes/BossScene";
+import { IntroScene } from "./game/scenes/IntroScene";
+import { ChefStoryScene } from "./game/scenes/ChefStoryScene";
+import { ChefWorldScene } from "./game/scenes/ChefWorldScene";
 import { RoleSelectScene } from "./game/scenes/RoleSelectScene";
-import { ResultsScene } from "./game/scenes/ResultsScene";
 
-new Phaser.Game({
+const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "app",
-  backgroundColor: "#182126",
+  backgroundColor: "#d7e5d6",
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 960,
     height: 540,
   },
-    scene: [RoleSelectScene, LifeScene, BossScene, ResultsScene],
-});
+  scene: [IntroScene, RoleSelectScene, ChefStoryScene, ChefWorldScene],
+};
+
+void document.fonts.ready.then(() => new Phaser.Game(config));

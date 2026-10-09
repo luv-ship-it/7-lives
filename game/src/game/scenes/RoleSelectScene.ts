@@ -1,37 +1,51 @@
 import Phaser from "phaser";
+import { addMusicToggle, playSound } from "../audio/audioManager";
 import { roles, type Role } from "../data/roles";
-import { loadProgress, newProgress, saveProgress } from "../state/progress";
 
 export class RoleSelectScene extends Phaser.Scene {
 	private selectedRole: Role | undefined;
 	private cardBackgrounds = new Map<number, Phaser.GameObjects.Rectangle>();
 	private continueBackground!: Phaser.GameObjects.Rectangle;
 	private continueLabel!: Phaser.GameObjects.Text;
+	private selectionMessage!: Phaser.GameObjects.Text;
 
 	constructor() {
 		super("role-select");
 	}
 
+	preload() {
+		this.load.image("chef-kitchen", "/art/chef-kitchen.svg");
+	}
+
 	create() {
 		this.selectedRole = undefined;
 		this.cardBackgrounds.clear();
-		this.cameras.main.setBackgroundColor("#14211f");
-		const progress = loadProgress();
+		this.cameras.main.setBackgroundColor("#17424b");
+		addMusicToggle(this, 882, 38);
+		this.add
+			.image(480, 270, "chef-kitchen")
+			.setDisplaySize(960, 540)
+			.setAlpha(0.9)
+			.setDepth(-2);
+		this.add
+			.rectangle(480, 270, 960, 540, 0x123943)
+			.setAlpha(0.48)
+			.setDepth(-1);
 
 		this.add
 			.text(480, 47, "SEVEN LIVES", {
-				fontFamily: "Georgia, serif",
+				fontFamily: "Fraunces, serif",
 				fontSize: "15px",
-				color: "#e2ad58",
+				color: "#ffd77a",
 				letterSpacing: 2,
 			})
 			.setOrigin(0.5);
 
 		this.add
-			.text(480, 88, "Choose your role", {
-				fontFamily: "Georgia, serif",
+			.text(480, 88, "Choose your first life", {
+				fontFamily: "Fraunces, serif",
 				fontSize: "38px",
-				color: "#f1eadb",
+				color: "#fff0cf",
 			})
 			.setOrigin(0.5);
 
@@ -39,38 +53,56 @@ export class RoleSelectScene extends Phaser.Scene {
 			.text(
 				480,
 				130,
-				progress.complete
-					? "ALL SEVEN LIVES CLEARED     /     BEGIN AGAIN"
-					: `LIFE ${progress.currentLife} OF 7     /     YOUR STORY STARTS HERE`,
+				"LIFE 01  /  THE CHEF'S WORLD IS READY",
 				{
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "13px",
-				color: "#aab9b0",
+				color: "#d8e9d9",
 				},
 			)
 			.setOrigin(0.5);
 
-		roles.forEach((role, index) => this.createRoleCard(role, index));
+		this.add
+			.text(480, 157, "CHOOSE A LIFE TO ENTER  /  OTHER WORLDS WILL OPEN LATER", {
+				fontFamily: "DM Sans, sans-serif",
+				fontSize: "11px",
+				color: "#f3c776",
+			})
+			.setOrigin(0.5);
+
+		const displayedRoles = [
+			...roles.filter((role) => role.id === 7),
+			...roles.filter((role) => role.id !== 7),
+		];
+		displayedRoles.forEach((role, index) => this.createRoleCard(role, index));
+
+		this.selectionMessage = this.add
+			.text(480, 426, "Chef is the first playable life. Choose Chef to begin.", {
+				fontFamily: "DM Sans, sans-serif",
+				fontSize: "12px",
+				color: "#fff0cf",
+			})
+			.setOrigin(0.5);
 
 		this.continueBackground = this.add
-			.rectangle(480, 464, 270, 48, 0x31453d)
-			.setStrokeStyle(1, 0x52645a)
+			.rectangle(480, 464, 270, 48, 0xec8155)
+			.setStrokeStyle(2, 0xffd77a)
 			.setInteractive({ useHandCursor: true });
 
 		this.continueLabel = this.add
 			.text(480, 464, "SELECT A ROLE", {
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "14px",
-				color: "#9eaca3",
+				color: "#fff0cf",
 			})
 			.setOrigin(0.5);
 
 		this.continueBackground.on("pointerover", () => {
-			if (this.selectedRole) this.continueBackground.setFillStyle(0xd79343);
+			if (this.selectedRole) this.continueBackground.setFillStyle(0xffa36f);
 		});
 		this.continueBackground.on("pointerout", () => {
 			this.continueBackground.setFillStyle(
-				this.selectedRole ? 0xc98236 : 0x31453d,
+				this.selectedRole ? 0xec8155 : 0x245e61,
 			);
 		});
 		this.continueBackground.on("pointerdown", () => this.startLife());
@@ -84,10 +116,6 @@ export class RoleSelectScene extends Phaser.Scene {
 			}
 		});
 
-		if (!progress.complete) {
-			const savedRole = roles.find((role) => role.id === progress.selectedRoleId);
-			if (savedRole) this.selectRole(savedRole);
-		}
 	}
 
 	private createRoleCard(role: Role, index: number) {
@@ -95,80 +123,94 @@ export class RoleSelectScene extends Phaser.Scene {
 		const column = isTopRow ? index : index - 4;
 		const x = isTopRow ? 150 + column * 220 : 260 + column * 220;
 		const y = isTopRow ? 228 : 350;
+		const isAvailable = role.id === 7;
 		const background = this.add
-			.rectangle(x, y, 194, 102, 0x20312e)
-			.setStrokeStyle(1, 0x43574e)
+			.rectangle(x, y, 194, 102, isAvailable ? 0x286d66 : 0x354d50)
+			.setStrokeStyle(isAvailable ? 3 : 1, isAvailable ? 0xffd77a : 0x68817a)
 			.setInteractive({ useHandCursor: true });
 
 		this.cardBackgrounds.set(role.id, background);
 
 		this.add
 			.text(x - 76, y - 32, `0${role.id}`, {
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "11px",
-				color: "#d99a4d",
+				color: isAvailable ? "#ffe08c" : "#a9beb0",
 			})
 			.setOrigin(0, 0.5);
 
 		this.add
 			.text(x - 76, y - 10, role.name, {
-				fontFamily: "Georgia, serif",
+				fontFamily: "Fraunces, serif",
 				fontSize: "21px",
-				color: "#f1eadb",
+				color: isAvailable ? "#fff0cf" : "#c7d0c4",
 			})
 			.setOrigin(0, 0.5);
 
 		this.add
 			.text(x - 76, y + 19, role.description, {
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "11px",
-				color: "#b7c4bc",
+				color: isAvailable ? "#e4f0dc" : "#aebeb1",
 				wordWrap: { width: 158 },
 			})
 			.setOrigin(0, 0.5);
 
+		this.add
+			.text(x - 76, y + 40, isAvailable ? "WORLD READY" : "COMING SOON", {
+				fontFamily: "DM Sans, sans-serif",
+				fontSize: "9px",
+				color: isAvailable ? "#ffe08c" : "#f2a184",
+			})
+			.setOrigin(0, 0.5);
+
 		background.on("pointerover", () => {
-			if (this.selectedRole?.id !== role.id) background.setFillStyle(0x2b403a);
+			if (isAvailable && this.selectedRole?.id !== role.id) background.setFillStyle(0x38877b);
 		});
 		background.on("pointerout", () => {
-			if (this.selectedRole?.id !== role.id) background.setFillStyle(0x20312e);
+			if (isAvailable && this.selectedRole?.id !== role.id) background.setFillStyle(0x286d66);
 		});
-		background.on("pointerdown", () => this.selectRole(role));
+		background.on("pointerdown", () => {
+			if (isAvailable) {
+				this.selectRole(role);
+			} else {
+				playSound("select");
+				this.selectionMessage.setText(`${role.name}'s life is coming later. The Chef's world is ready now.`);
+			}
+		});
 	}
 
 	private selectRole(role: Role | undefined) {
 		if (!role) return;
+		if (role.id !== 7) {
+			this.selectionMessage.setText(`${role.name}'s life is coming later. The Chef's world is ready now.`);
+			return;
+		}
 
 		this.selectedRole = role;
+		playSound("select");
 		for (const [id, background] of this.cardBackgrounds) {
 			const selected = id === role.id;
 			background
-				.setFillStyle(selected ? 0x3d5143 : 0x20312e)
-				.setStrokeStyle(selected ? 2 : 1, selected ? 0xe2ad58 : 0x43574e);
+				.setFillStyle(selected ? 0x54876b : id === 7 ? 0x286d66 : 0x354d50)
+				.setStrokeStyle(
+					selected ? 3 : 1,
+					selected ? 0xffd77a : id === 7 ? 0x75aaa0 : 0x68817a,
+				);
 		}
 
-		this.continueBackground.setFillStyle(0xc98236);
-		this.continueBackground.setStrokeStyle(1, 0xe2ad58);
+		this.continueBackground.setFillStyle(0xec8155);
+		this.continueBackground.setStrokeStyle(2, 0xffd77a);
 		this.continueLabel.setText(`CONTINUE AS ${role.name.toUpperCase()}`);
-		this.continueLabel.setColor("#171b17");
-
-		const progress = loadProgress();
-		if (!progress.complete) {
-			saveProgress({ ...progress, selectedRoleId: role.id });
-		}
+		this.continueLabel.setColor("#182b2b");
+		this.selectionMessage.setText("Chef selected. Welcome to The Last Table.");
 	}
 
 	private startLife() {
 		if (!this.selectedRole) return;
+		playSound("confirm");
 
-		const savedProgress = loadProgress();
-		const progress = savedProgress.complete ? newProgress() : savedProgress;
-		const lifeNumber = progress.currentLife;
-		saveProgress({ ...progress, selectedRoleId: this.selectedRole.id });
-		this.scene.start("life", {
-			lifeNumber,
-			role: this.selectedRole,
-		});
+		this.scene.start("chef-story");
 	}
 }
 

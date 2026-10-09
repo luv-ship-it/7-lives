@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { addMusicToggle, playSound } from "../audio/audioManager";
 import type { Role } from "../data/roles";
 import { loadProgress, newProgress, saveProgress } from "../state/progress";
 
@@ -23,6 +24,16 @@ export class ResultsScene extends Phaser.Scene {
 		}
 
 		this.cameras.main.setBackgroundColor("#14211f");
+		addMusicToggle(this, 884, 38);
+		this.add
+			.image(480, 270, "last-light")
+			.setDisplaySize(960, 540)
+			.setAlpha(0.52)
+			.setDepth(-2);
+		this.add
+			.rectangle(480, 270, 960, 540, 0x101817)
+			.setAlpha(0.55)
+			.setDepth(-1);
 
 		if (data.outcome === "victory") {
 			const progress = loadProgress();
@@ -40,9 +51,10 @@ export class ResultsScene extends Phaser.Scene {
 		}
 
 		const won = data.outcome === "victory";
+		playSound(won ? "victory" : "defeat");
 		this.add
 			.text(480, 92, won ? "LIFE CLEARED" : "LIFE FAILED", {
-				fontFamily: "Georgia, serif",
+				fontFamily: "Fraunces, serif",
 				fontSize: "40px",
 				color: won ? "#e2ad58" : "#d9846f",
 			})
@@ -56,7 +68,7 @@ export class ResultsScene extends Phaser.Scene {
 					? `${data.role.name} defeated ${data.bossName}.`
 					: `${data.role.name} was defeated by ${data.bossName}.`,
 				{
-					fontFamily: "Arial, sans-serif",
+					fontFamily: "DM Sans, sans-serif",
 					fontSize: "17px",
 					color: "#d5dfd8",
 					align: "center",
@@ -72,7 +84,7 @@ export class ResultsScene extends Phaser.Scene {
 				: "Your progress is safe. You can try again or choose another role.";
 		this.add
 			.text(480, 212, nextMessage, {
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "15px",
 				color: "#aebfb5",
 				align: "center",
@@ -107,22 +119,25 @@ export class ResultsScene extends Phaser.Scene {
 		width = 260,
 	) {
 		const background = this.add
-			.rectangle(x, 310, width, 52, 0xc98236)
-			.setStrokeStyle(1, 0xe2ad58)
+			.rectangle(x, 310, width, 52, 0xec8155)
+			.setStrokeStyle(2, 0xffd77a)
 			.setInteractive({ useHandCursor: true });
 		this.add
 			.text(x, 310, label, {
-				fontFamily: "Arial, sans-serif",
+				fontFamily: "DM Sans, sans-serif",
 				fontSize: "13px",
-				color: "#171b17",
+				color: "#182b2b",
 				align: "center",
 				wordWrap: { width: width - 24 },
 			})
 			.setOrigin(0.5);
 
-		background.on("pointerover", () => background.setFillStyle(0xe0a253));
-		background.on("pointerout", () => background.setFillStyle(0xc98236));
-		background.on("pointerdown", onPress);
+		background.on("pointerover", () => background.setFillStyle(0xffa36f));
+		background.on("pointerout", () => background.setFillStyle(0xec8155));
+		background.on("pointerdown", () => {
+			playSound("confirm");
+			onPress();
+		});
 	}
 
 	private startNewRun() {
