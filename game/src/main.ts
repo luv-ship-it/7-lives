@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import "./style.css";
-import { PrototypeScene } from "./game/scenes/PrototypeScene";
+import { LifeScene } from "./game/scenes/LifeScene";
+import { BossScene } from "./game/scenes/BossScene";
+import { RoleSelectScene } from "./game/scenes/RoleSelectScene";
+import { ResultsScene } from "./game/scenes/ResultsScene";
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -12,5 +15,5 @@ new Phaser.Game({
     width: 960,
     height: 540,
   },
-  scene: [PrototypeScene],
+    scene: [RoleSelectScene, LifeScene, BossScene, ResultsScene],
 });
