@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <defs>
+    <pattern id="clinicFloor" width="90" height="62" patternUnits="userSpaceOnUse" patternTransform="skewX(-8)">
+      <rect width="90" height="62" fill="#c9e2d8"/>
+      <path d="M0 0h90v62H0zM45 0v62M0 31h90" fill="none" stroke="#a7cdbf" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="#e4efd9"/>
+  <rect width="960" height="318" fill="#d8e9da"/>
+  <path d="M0 0h960v56H0z" fill="#438478"/>
+  <path d="M0 56h960v10H0z" fill="#f2c66d"/>
+
+  <g>
+    <rect x="45" y="86" width="226" height="146" rx="14" fill="#f8efd6" stroke="#438478" stroke-width="7"/>
+    <rect x="61" y="101" width="194" height="113" rx="8" fill="#a8d8c2"/>
+    <path d="M158 101v113m-97-56h194" stroke="#fff3d8" stroke-width="9"/>
+    <path d="M69 197q42-62 88-8t89-25v31H69z" fill="#6eaf94"/>
+    <circle cx="228" cy="116" r="14" fill="#f2c66d"/>
+  </g>
+
+  <g>
+    <rect x="350" y="86" width="244" height="146" rx="14" fill="#f8efd6" stroke="#438478" stroke-width="7"/>
+    <rect x="367" y="102" width="210" height="113" rx="8" fill="#e9a986"/>
+    <path d="M385 189q35-57 70 0t67-29 38 14v41H385z" fill="#ce8270"/>
+    <path d="M474 103v35m-18-17h36" stroke="#fff3d8" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="553" cy="116" r="10" fill="#f2c66d"/>
+  </g>
+
+  <g>
+    <rect x="681" y="83" width="234" height="149" rx="14" fill="#f8efd6" stroke="#438478" stroke-width="7"/>
+    <rect x="698" y="100" width="200" height="115" rx="8" fill="#9bc9bd"/>
+    <path d="M710 192q40-51 78-4t77-23 33 19v31H710z" fill="#6d9c91"/>
+    <path d="m795 116 5 12 13 1-10 8 3 12-11-7-11 7 3-12-10-8 13-1z" fill="#fff1bf"/>
+  </g>
+
+  <g>
+    <rect x="54" y="263" width="234" height="62" rx="10" fill="#438478" stroke="#2e6760" stroke-width="6"/>
+    <rect x="40" y="249" width="262" height="21" rx="7" fill="#f2c66d"/>
+    <path d="M75 325v-34h72v34m15 0v-34h91v34" fill="#36766b" stroke="#2e6760" stroke-width="5"/>
+    <rect x="86" y="278" width="34" height="25" rx="6" fill="#f8efd6"/>
+    <rect x="178" y="278" width="48" height="25" rx="6" fill="#e9a986"/>
+  </g>
+
+  <g>
+    <rect x="350" y="256" width="250" height="72" rx="14" fill="#86b9a4" stroke="#438478" stroke-width="6"/>
+    <rect x="336" y="243" width="278" height="20" rx="8" fill="#f2c66d"/>
+    <path d="M379 296q28-31 56 0t56-15 62 16" fill="none" stroke="#f8efd6" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="550" cy="282" r="9" fill="#e88758"/>
+  </g>
+
+  <g>
+    <rect x="674" y="254" width="247" height="74" rx="14" fill="#e9a986" stroke="#a96959" stroke-width="6"/>
+    <rect x="660" y="241" width="275" height="20" rx="8" fill="#f2c66d"/>
+    <path d="M709 286h176" stroke="#fff3d8" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="741" cy="286" r="11" fill="#438478"/><circle cx="797" cy="286" r="11" fill="#438478"/><circle cx="853" cy="286" r="11" fill="#438478"/>
+  </g>
+
+  <rect y="317" width="960" height="223" fill="url(#clinicFloor)"/>
+  <path d="M0 321h960" stroke="#f2c66d" stroke-width="8"/>
+  <path d="M0 414q160-42 319 0 174 44 334-3 144-42 307-2v18q-155-28-300 15-178 51-354 6Q151 402 0 436z" fill="#e9a986" opacity=".8"/>
+  <path d="M0 426q160-42 319 0 174 44 334-3 144-42 307-2" fill="none" stroke="#fff3d8" stroke-width="4"/>
+
+  <g fill="#438478">
+    <path d="M311 210h90v16h-90zm13 16v52m64-52v52" stroke="#438478" stroke-width="11"/>
+    <path d="M315 277h82v15h-82z"/>
+    <path d="M616 215h46v8h-46zm6 8v46m34-46v46" stroke="#438478" stroke-width="8"/>
+  </g>
+  <g fill="#f2c66d">
+    <circle cx="344" cy="242" r="13"/><circle cx="370" cy="242" r="13"/><circle cx="638" cy="245" r="12"/>
+  </g>
+  <g fill="#fff3d8" opacity=".8">
+    <circle cx="304" cy="365" r="4"/><circle cx="626" cy="377" r="3"/><circle cx="932" cy="369" r="4"/>
+    <circle cx="70" cy="370" r="3"/><circle cx="514" cy="356" r="3"/><circle cx="822" cy="394" r="4"/>
+  </g>
+</svg>

@@ -10,10 +10,18 @@ interface Ingredient {
 	visual: Phaser.GameObjects.Container;
 }
 
+interface DinnerGuest {
+	name: string;
+	x: number;
+	y: number;
+	served: boolean;
+	visual: Phaser.GameObjects.Container;
+}
+
 type KitchenTarget =
 	| { kind: "ingredient"; ingredient: Ingredient; x: number; y: number }
 	| { kind: "stove"; x: number; y: number }
-	| { kind: "serving"; x: number; y: number };
+	| { kind: "guest"; guest: DinnerGuest; x: number; y: number };
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -24,12 +32,14 @@ export class ChefWorldScene extends Phaser.Scene {
 	private keysDown = new Set<string>();
 	private touchDirections = new Set<Direction>();
 	private ingredients: Ingredient[] = [];
-	private phase: "gather" | "cook" | "serve" | "complete" = "gather";
+	private phase: "gather" | "cook" | "rush" | "complete" = "gather";
 	private pantryLabel!: Phaser.GameObjects.Text;
 	private objectiveLabel!: Phaser.GameObjects.Text;
 	private promptLabel!: Phaser.GameObjects.Text;
 	private stoveGlow!: Phaser.GameObjects.Arc;
 	private serveGlow!: Phaser.GameObjects.Arc;
+	private guests: DinnerGuest[] = [];
+	private rushTimer = 45;
 	private elapsed = 0;
 
 	constructor() {
@@ -43,6 +53,8 @@ export class ChefWorldScene extends Phaser.Scene {
 
 	create() {
 		this.phase = "gather";
+		this.guests = [];
+		this.rushTimer = 45;
 		this.chefX = 105;
 		this.chefY = 438;
 		this.elapsed = 0;
@@ -151,6 +163,14 @@ export class ChefWorldScene extends Phaser.Scene {
 	update(_time: number, delta: number) {
 		if (this.phase === "complete") return;
 		this.elapsed += delta;
+		if (this.phase === "rush") {
+			this.rushTimer = Math.max(0, this.rushTimer - delta / 1000);
+			this.pantryLabel.setText(`RUSH  ${Math.ceil(this.rushTimer)}s`);
+			if (this.rushTimer <= 0) {
+				this.failDinnerRush();
+				return;
+			}
+		}
 		const horizontal =
 			Number(this.keysDown.has("d") || this.keysDown.has("arrowright") || this.touchDirections.has("right")) -
 			Number(this.keysDown.has("a") || this.keysDown.has("arrowleft") || this.touchDirections.has("left"));
@@ -294,8 +314,12 @@ export class ChefWorldScene extends Phaser.Scene {
 			if (available.length === 0) available.push({ kind: "stove", x: 570, y: 327 });
 			return this.closestTarget(available);
 		}
-		if (this.phase === "serve") {
-			return this.closestTarget([{ kind: "serving", x: 836, y: 317 }]);
+		if (this.phase === "rush") {
+			return this.closestTarget(
+				this.guests
+					.filter((guest) => !guest.served)
+					.map((guest) => ({ kind: "guest" as const, guest, x: guest.x, y: guest.y })),
+			);
 		}
 		return undefined;
 	}
@@ -314,8 +338,9 @@ export class ChefWorldScene extends Phaser.Scene {
 		let prompt = "Explore the kitchen. Collect the tomato, mushroom, and wild herb.";
 		if (target?.kind === "ingredient") prompt = `E  /  PICK UP ${target.ingredient.name.toUpperCase()}`;
 		if (target?.kind === "stove") prompt = "E  /  COOK THE SOUP AT THE STOVE";
-		if (target?.kind === "serving") prompt = "E  /  SERVE THE SOUP AT THE HATCH";
+		if (target?.kind === "guest") prompt = `E  /  SERVE SOUP TO ${target.guest.name.toUpperCase()}`;
 		if (this.phase === "cook") prompt = "All ingredients gathered. Find the stove.";
+		if (this.phase === "rush" && !target) prompt = "Dinner rush! Find the next table and deliver the soup.";
 		if (this.promptLabel.text !== prompt) this.promptLabel.setText(prompt);
 	}
 
@@ -342,11 +367,8 @@ export class ChefWorldScene extends Phaser.Scene {
 		}
 
 		if (target.kind === "stove" && this.phase === "cook") {
-			this.phase = "serve";
-			this.objectiveLabel.setText("SOUP IS READY  /  Take it to the serving hatch");
-			this.promptLabel.setText("The kitchen smells like home. Deliver the bowl.");
+			this.startDinnerRush();
 			this.stoveGlow.setFillStyle(0xf2c66d, 0.4);
-			this.serveGlow.setAlpha(0.5);
 			this.tweens.add({
 				targets: this.stoveGlow,
 				scale: 1.45,
@@ -358,14 +380,97 @@ export class ChefWorldScene extends Phaser.Scene {
 			return;
 		}
 
-		if (target.kind === "serving" && this.phase === "serve") this.completeLife();
+		if (target.kind === "guest" && this.phase === "rush") this.serveGuest(target.guest);
+	}
+
+	private startDinnerRush() {
+		this.phase = "rush";
+		this.rushTimer = 45;
+		this.objectiveLabel.setText("DINNER RUSH  /  Serve all three guests before time runs out");
+		this.pantryLabel.setText("RUSH  45s");
+		this.pantryLabel.setColor("#fff0cf");
+		this.guests = [
+			this.createGuest("MARA", 327, 324, 0xe88758),
+			this.createGuest("TOM", 578, 344, 0x438478),
+			this.createGuest("NIA", 806, 326, 0x8874ad),
+		];
+		this.promptLabel.setText("The dining room fills up. Serve each table while the soup is hot!");
+		playSound("warning");
+	}
+
+	private createGuest(name: string, x: number, y: number, color: number): DinnerGuest {
+		const visual = this.add.container(x, y).setDepth(2);
+		visual.add(this.add.ellipse(0, 29, 73, 22, 0x355d50, 0.22));
+		visual.add(this.add.rectangle(0, 7, 44, 48, color).setStrokeStyle(3, 0xfff0cf));
+		visual.add(this.add.circle(0, -25, 19, 0xd69b71).setStrokeStyle(3, 0x315b55));
+		visual.add(this.add.circle(-7, -27, 2, 0x315b55));
+		visual.add(this.add.circle(7, -27, 2, 0x315b55));
+		visual.add(this.add.arc(0, -20, 6, 20, 160, false, 0xa85d4b).setStrokeStyle(2, 0xa85d4b));
+		visual.add(this.add.ellipse(0, 17, 28, 12, 0xfff0cf).setStrokeStyle(2, 0xc68c5e));
+		visual.add(this.add.circle(0, 15, 5, 0xe96650));
+		visual.add(this.add.ellipse(0, -58, 58, 26, 0xfff0cf).setStrokeStyle(2, 0x438478));
+		visual.add(this.add.text(-19, -63, "SOUP?", {
+			fontFamily: "DM Sans, sans-serif",
+			fontSize: "9px",
+			fontStyle: "bold",
+			color: "#24534f",
+		}));
+		visual.add(this.add.text(-23, 44, name, {
+			fontFamily: "DM Sans, sans-serif",
+			fontSize: "9px",
+			fontStyle: "bold",
+			color: "#24534f",
+			backgroundColor: "#fff4d9",
+			padding: { x: 5, y: 2 },
+		}));
+		return { name, x, y, served: false, visual };
+	}
+
+	private serveGuest(guest: DinnerGuest) {
+		guest.served = true;
+		guest.visual.destroy();
+		playSound("select");
+		const served = this.guests.filter((entry) => entry.served).length;
+		this.pantryLabel.setText(`SERVED  ${served} / 3`);
+		this.promptLabel.setText(`${guest.name} smiles over a warm bowl. Keep moving!`);
+		if (served === this.guests.length) this.completeLife();
+	}
+
+	private failDinnerRush() {
+		this.phase = "complete";
+		playSound("defeat");
+		this.add.rectangle(480, 270, 960, 540, 0x173943, 0.55).setDepth(10);
+		this.add.rectangle(480, 270, 560, 230, 0xfff0cf).setStrokeStyle(4, 0xe88758).setDepth(11);
+		this.add.text(480, 220, "THE DINNER RUSH GOT AWAY", {
+			fontFamily: "Fraunces, serif",
+			fontSize: "31px",
+			color: "#a85d4b",
+		}).setOrigin(0.5).setDepth(12);
+		this.add.text(480, 271, "The guests are still waiting. Take a breath and try the shift again.", {
+			fontFamily: "DM Sans, sans-serif",
+			fontSize: "13px",
+			color: "#355a52",
+			align: "center",
+			wordWrap: { width: 440 },
+		}).setOrigin(0.5).setDepth(12);
+		const retry = this.add.rectangle(480, 328, 205, 42, 0x246b65)
+			.setStrokeStyle(2, 0xf2c66d)
+			.setInteractive({ useHandCursor: true })
+			.setDepth(12);
+		this.add.text(480, 328, "RETRY THE CHEF LIFE", {
+			fontFamily: "DM Sans, sans-serif",
+			fontSize: "10px",
+			fontStyle: "bold",
+			color: "#fff3d8",
+		}).setOrigin(0.5).setDepth(13);
+		retry.on("pointerdown", () => this.scene.restart());
 	}
 
 	private completeLife() {
 		this.phase = "complete";
 		playSound("victory");
 		try {
-			localStorage.setItem("7-lives-chef-life-complete", "true");
+			localStorage.setItem("7-lives-chef-dinner-rush-cleared-v1", "true");
 		} catch {
 			// Completion remains visible for this run if browser storage is unavailable.
 		}
@@ -395,7 +500,7 @@ export class ChefWorldScene extends Phaser.Scene {
 			.setOrigin(0.5)
 			.setDepth(12);
 		this.add
-			.text(480, 315, "The first life is complete. The next life will be a new world.", {
+			.text(480, 315, "All three guests are served. Engineer's life is now unlocked.", {
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "13px",
 				color: "#506b5c",
@@ -409,7 +514,7 @@ export class ChefWorldScene extends Phaser.Scene {
 			.setInteractive({ useHandCursor: true })
 			.setDepth(12);
 		this.add
-			.text(480, 365, "COOK ANOTHER MEAL", {
+			.text(480, 365, "CHOOSE THE NEXT LIFE", {
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "11px",
 				fontStyle: "bold",
@@ -417,6 +522,6 @@ export class ChefWorldScene extends Phaser.Scene {
 			})
 			.setOrigin(0.5)
 			.setDepth(13);
-		restart.on("pointerdown", () => this.scene.restart());
+		restart.on("pointerdown", () => this.scene.start("role-select"));
 	}
 }

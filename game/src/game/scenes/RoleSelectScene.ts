@@ -4,6 +4,7 @@ import { roles, type Role } from "../data/roles";
 
 export class RoleSelectScene extends Phaser.Scene {
 	private selectedRole: Role | undefined;
+	private unlockedRoles = new Set<number>();
 	private cardBackgrounds = new Map<number, Phaser.GameObjects.Rectangle>();
 	private continueBackground!: Phaser.GameObjects.Rectangle;
 	private continueLabel!: Phaser.GameObjects.Text;
@@ -14,16 +15,17 @@ export class RoleSelectScene extends Phaser.Scene {
 	}
 
 	preload() {
-		this.load.image("chef-kitchen", "/art/chef-kitchen.svg");
+		this.load.image("seven-lives", "/art/seven-lives.svg");
 	}
 
 	create() {
 		this.selectedRole = undefined;
+		this.unlockedRoles = this.getUnlockedRoles();
 		this.cardBackgrounds.clear();
 		this.cameras.main.setBackgroundColor("#17424b");
 		addMusicToggle(this, 882, 38);
 		this.add
-			.image(480, 270, "chef-kitchen")
+			.image(480, 270, "seven-lives")
 			.setDisplaySize(960, 540)
 			.setAlpha(0.9)
 			.setDepth(-2);
@@ -53,7 +55,9 @@ export class RoleSelectScene extends Phaser.Scene {
 			.text(
 				480,
 				130,
-				"LIFE 01  /  THE CHEF'S WORLD IS READY",
+				this.campaignComplete()
+					? "ALL SEVEN LIVES CLEARED"
+					: `${this.unlockedRoles.size} OF 7 LIVES UNLOCKED  /  ${this.nextRole()?.name.toUpperCase() ?? "CAMPAIGN COMPLETE"} READY`,
 				{
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "13px",
@@ -63,7 +67,9 @@ export class RoleSelectScene extends Phaser.Scene {
 			.setOrigin(0.5);
 
 		this.add
-			.text(480, 157, "CHOOSE A LIFE TO ENTER  /  OTHER WORLDS WILL OPEN LATER", {
+			.text(480, 157, this.campaignComplete()
+				? "EVERY LIFE CLEARED  /  START A NEW JOURNEY"
+				: `CLEAR ${this.previousRoleName().toUpperCase()} TO UNLOCK THE NEXT LIFE`, {
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "11px",
 				color: "#f3c776",
@@ -72,12 +78,19 @@ export class RoleSelectScene extends Phaser.Scene {
 
 		const displayedRoles = [
 			...roles.filter((role) => role.id === 7),
-			...roles.filter((role) => role.id !== 7),
+			...roles.filter((role) => role.id === 3),
+			...roles.filter((role) => role.id === 1),
+			...roles.filter((role) => role.id === 2),
+			...roles.filter((role) => role.id === 4),
+			...roles.filter((role) => role.id === 5),
+			...roles.filter((role) => role.id === 6),
 		];
 		displayedRoles.forEach((role, index) => this.createRoleCard(role, index));
 
 		this.selectionMessage = this.add
-			.text(480, 426, "Chef is the first playable life. Choose Chef to begin.", {
+			.text(480, 426, this.selectedRole
+				? this.selectedMessage(this.selectedRole)
+				: `${this.nextRole()?.name ?? "All lives"} is the next playable world.`, {
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "12px",
 				color: "#fff0cf",
@@ -123,7 +136,7 @@ export class RoleSelectScene extends Phaser.Scene {
 		const column = isTopRow ? index : index - 4;
 		const x = isTopRow ? 150 + column * 220 : 260 + column * 220;
 		const y = isTopRow ? 228 : 350;
-		const isAvailable = role.id === 7;
+		const isAvailable = this.isRoleAvailable(role);
 		const background = this.add
 			.rectangle(x, y, 194, 102, isAvailable ? 0x286d66 : 0x354d50)
 			.setStrokeStyle(isAvailable ? 3 : 1, isAvailable ? 0xffd77a : 0x68817a)
@@ -157,7 +170,7 @@ export class RoleSelectScene extends Phaser.Scene {
 			.setOrigin(0, 0.5);
 
 		this.add
-			.text(x - 76, y + 40, isAvailable ? "WORLD READY" : "COMING SOON", {
+			.text(x - 76, y + 40, isAvailable ? "WORLD READY" : this.lockLabel(role), {
 				fontFamily: "DM Sans, sans-serif",
 				fontSize: "9px",
 				color: isAvailable ? "#ffe08c" : "#f2a184",
@@ -175,15 +188,15 @@ export class RoleSelectScene extends Phaser.Scene {
 				this.selectRole(role);
 			} else {
 				playSound("select");
-				this.selectionMessage.setText(`${role.name}'s life is coming later. The Chef's world is ready now.`);
+				this.selectionMessage.setText(this.lockMessage(role));
 			}
 		});
 	}
 
 	private selectRole(role: Role | undefined) {
 		if (!role) return;
-		if (role.id !== 7) {
-			this.selectionMessage.setText(`${role.name}'s life is coming later. The Chef's world is ready now.`);
+		if (!this.isRoleAvailable(role)) {
+			this.selectionMessage.setText(this.lockMessage(role));
 			return;
 		}
 
@@ -192,10 +205,20 @@ export class RoleSelectScene extends Phaser.Scene {
 		for (const [id, background] of this.cardBackgrounds) {
 			const selected = id === role.id;
 			background
-				.setFillStyle(selected ? 0x54876b : id === 7 ? 0x286d66 : 0x354d50)
+				.setFillStyle(
+					selected
+						? 0x54876b
+						: this.isRoleAvailable(roles.find((entry) => entry.id === id)!)
+							? 0x286d66
+							: 0x354d50,
+				)
 				.setStrokeStyle(
 					selected ? 3 : 1,
-					selected ? 0xffd77a : id === 7 ? 0x75aaa0 : 0x68817a,
+					selected
+						? 0xffd77a
+						: this.isRoleAvailable(roles.find((entry) => entry.id === id)!)
+							? 0x75aaa0
+							: 0x68817a,
 				);
 		}
 
@@ -203,14 +226,92 @@ export class RoleSelectScene extends Phaser.Scene {
 		this.continueBackground.setStrokeStyle(2, 0xffd77a);
 		this.continueLabel.setText(`CONTINUE AS ${role.name.toUpperCase()}`);
 		this.continueLabel.setColor("#182b2b");
-		this.selectionMessage.setText("Chef selected. Welcome to The Last Table.");
+		this.selectionMessage.setText(this.selectedMessage(role));
 	}
 
 	private startLife() {
 		if (!this.selectedRole) return;
 		playSound("confirm");
 
-		this.scene.start("chef-story");
+		if (this.selectedRole.id === 7) {
+			this.scene.start("chef-story");
+		} else if (this.selectedRole.id === 3) {
+			this.scene.start("engineer-story");
+		} else if (this.selectedRole.id === 1) {
+			this.scene.start("doctor-story");
+		} else {
+			this.scene.start("profession-story", { roleId: this.selectedRole.id });
+		}
+	}
+
+	private isRoleAvailable(role: Role): boolean {
+		return this.unlockedRoles.has(role.id);
+	}
+
+	private lockLabel(role: Role): string {
+		const previous = this.previousRoleFor(role.id);
+		return previous ? `CLEAR ${previous.name.toUpperCase()} FIRST` : "COMING SOON";
+	}
+
+	private lockMessage(role: Role): string {
+		const previous = this.previousRoleFor(role.id);
+		return previous
+			? `Clear the ${previous.name} life to unlock ${role.name}.`
+			: `${role.name}'s world is coming later.`;
+	}
+
+	private selectedMessage(role: Role): string {
+		if (role.id === 7) return "Chef selected. Welcome to The Last Table.";
+		if (role.id === 3) return "Engineer selected. The Signal Workshop needs you.";
+		if (role.id === 1) return "Doctor selected. The Lantern Clinic is waiting.";
+		return `${role.name} selected. Your next world is ready.`;
+	}
+
+	private getUnlockedRoles(): Set<number> {
+		const order = [7, 3, 1, 2, 4, 5, 6];
+		const unlocked = new Set<number>([order[0]]);
+		for (let index = 0; index < order.length - 1; index += 1) {
+			if (!this.isLifeComplete(order[index])) break;
+			unlocked.add(order[index + 1]);
+		}
+		return unlocked;
+	}
+
+	private isLifeComplete(roleId: number): boolean {
+		const keys: Record<number, string> = {
+			7: "7-lives-chef-dinner-rush-cleared-v1",
+			3: "7-lives-engineer-life-complete",
+			1: "7-lives-doctor-life-complete-v1",
+			2: "7-lives-lawyer-life-complete-v1",
+			4: "7-lives-athlete-life-complete-v1",
+			5: "7-lives-teacher-life-complete-v1",
+			6: "7-lives-scientist-life-complete-v1",
+		};
+		try {
+			return localStorage.getItem(keys[roleId]) === "true";
+		} catch {
+			return false;
+		}
+	}
+
+	private previousRoleFor(roleId: number): Role | undefined {
+		const order = [7, 3, 1, 2, 4, 5, 6];
+		const previousId = order[order.indexOf(roleId) - 1];
+		return roles.find((role) => role.id === previousId);
+	}
+
+	private nextRole(): Role | undefined {
+		const order = [7, 3, 1, 2, 4, 5, 6];
+		return roles.find((role) => !this.unlockedRoles.has(role.id) && order.includes(role.id));
+	}
+
+	private previousRoleName(): string {
+		const next = this.nextRole();
+		return next ? this.previousRoleFor(next.id)?.name ?? "previous life" : "all lives";
+	}
+
+	private campaignComplete(): boolean {
+		return this.unlockedRoles.size === roles.length;
 	}
 }
 
